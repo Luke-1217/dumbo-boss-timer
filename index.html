@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DUMBO 野王計時器</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #1a1a2e; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { background-color: #16213e; border: 1px solid #0f3460; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); } 
+        
+        .btn-primary { background-color: #e94560; border-color: #e94560; }
+        .btn-primary:hover { background-color: #c73e52; }
+        
+        .filter-btn { 
+            border: 1px solid #0f3460; 
+            color: #a0a0a0; 
+            background-color: #16213e;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        .filter-btn.active { 
+            background-color: #4cc9f0; 
+            color: #000; 
+            font-weight: bold; 
+            border-color: #4cc9f0;
+        }
+        .filter-btn:hover { color: #fff; border-color: #4cc9f0; }
+
+        .text-blue { color: #4cc9f0; }
+        .text-orange { color: #f72585; }
+        .text-red { color: #ff0000; text-shadow: 0 0 8px rgba(255, 0, 0, 0.5); }
+        .channel-badge-all { background-color: #f72585 !important; color: white !important; border: none !important; }
+        
+        /* 時間顯示的小標題樣式 */
+        .time-label { color: #8892b0; font-size: 0.85em; }
+        .time-value { color: #ffffff; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-white m-0">🏆 DUMBO 野王計時器</h2>
+        <button onclick="triggerMaintenance()" class="btn btn-danger border-light">
+            ⚠️ 維護後重生
+        </button>
+    </div>
+
+    <div class="card p-4 mb-4">
+        <div class="row g-2">
+            <div class="col-md-5">
+                <select id="bossSelect" class="form-select bg-dark text-white border-secondary">
+                    <option value="" disabled selected>-- 請選擇 BOSS --</option>
+                    <option value="紅寶王">🐌 紅寶王 (23m ~ 30m)</option>
+                    <option value="樹妖王">🌳 樹妖王 (23m ~ 30m)</option>
+                    <option value="殭屍猴王">🐒 殭屍猴王 (38m ~ 45m)</option>
+                    <option value="巨居蟹">🦀 巨居蟹 (45m ~ 1h)</option>
+                    <option value="冥界幽靈">👻 冥界幽靈 (45m ~ 1h)</option>
+                    <option value="雪毛怪人">👣 雪毛怪人 (45m ~ 1h8m)</option>
+                    <option value="咕咕鐘">🦉 咕咕鐘 (1h8m ~ 1h30m)</option>
+                    <option value="巨大深山人蔘">🥕 巨大深山人蔘 (1h ~ 2h15m)</option>
+                    <option value="沼澤巨鱷">🐊 沼澤巨鱷 (1h30m ~ 1h45m)</option>
+                    <option value="厄運死神">💀 厄運死神 (45m ~ 1h45m)</option>
+                    <option value="肯德熊">🐻 肯德熊 (1h53m ~ 2h8m)</option>
+                    <option value="艾利傑">🦁 艾利傑 (1h58m ~ 2h8m)</option>
+                    <option value="喵Z客">🐱 喵Z客 (2h ~ 7h)</option>
+                    <option value="喵怪仙人">😺 喵怪仙人 (2h30m ~ 2h50m)</option>
+                    <option value="書生幽靈">📜 書生幽靈 (2h30m ~ 5h)</option>
+                    <option value="仙人娃娃">🧸 仙人娃娃 (2h38m ~ 3h)</option>
+                    <option value="雪山魔女">🧙‍♀️ 雪山魔女 (2h38m ~ 3h)</option>
+                    <option value="殭屍蘑菇王">🧟 殭屍蘑菇王 (3h15m ~ 3h45m)</option>
+                    <option value="蘑菇王">🍄 蘑菇王 (3h30m ~ 4h)</option>
+                    <option value="九尾妖狐">🦊 九尾妖狐 (3h30m ~ 9h30m)</option>
+                    <option value="海怒斯(左)">🐟 海怒斯(左) (3h ~ 5h)</option>
+                    <option value="海怒斯(右)">🐡 海怒斯(右) (3h ~ 5h)</option>
+                    <option value="葛雷金剛">🦍 葛雷金剛 (4h30m ~ 5h50m)</option>
+                    <option value="巴洛谷">😈 巴洛谷 (6h45m ~ 9h)</option>
+                    <option value="黑輪王">🍢 黑輪王 (13h ~ 17h)</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="number" id="channelInput" class="form-control bg-dark text-white border-secondary" placeholder="輸入頻道 (例如 1527)">
+            </div>
+            <div class="col-md-3">
+                <button onclick="addRecord()" class="btn btn-primary w-100 fw-bold">⚔️ 登記擊殺</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3 d-flex flex-wrap" id="filterContainer">
+        <button class="btn filter-btn active rounded-pill px-3" onclick="filterData('all', this)">📌 全部</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('紅寶王', this)">🐌 紅寶王</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('樹妖王', this)">🌳 樹妖王</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('殭屍猴王', this)">🐒 猴王</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('巨居蟹', this)">🦀 巨居蟹</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('冥界幽靈', this)">👻 幽靈</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('雪毛怪人', this)">👣 雪毛</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('咕咕鐘', this)">🦉 咕咕鐘</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('巨大深山人蔘', this)">🥕 人蔘</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('沼澤巨鱷', this)">🐊 巨鱷</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('厄運死神', this)">💀 死神</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('肯德熊', this)">🐻 肯德熊</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('艾利傑', this)">🦁 艾利傑</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('喵Z客', this)">🐱 喵Z客</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('喵怪仙人', this)">😺 喵怪</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('書生幽靈', this)">📜 書生</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('仙人娃娃', this)">🧸 娃娃</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('雪山魔女', this)">🧙‍♀️ 魔女</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('殭屍蘑菇王', this)">🧟 殭屍蘑</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('蘑菇王', this)">🍄 蘑菇王</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('九尾妖狐', this)">🦊 九尾</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('海怒斯(左)', this)">🐟 海(左)</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('海怒斯(右)', this)">🐡 海(右)</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('葛雷金剛', this)">🦍 金剛</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('巴洛谷', this)">😈 巴洛谷</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('黑輪王', this)">🍢 黑輪王</button>
+    </div>
+
+    <div id="bossList" class="row">
+        <div class="text-center text-white">正在載入資料...</div>
+    </div>
+</div>
+
+<script>
+    const API_URL = "http://127.0.0.1:8000";
+    
+    let allRecords = []; 
+    let currentFilter = 'all'; 
+
+    async function loadData() {
+        try {
+            const response = await fetch(`${API_URL}/bosses`);
+            allRecords = await response.json(); 
+            renderList();
+
+        } catch (error) {
+            console.error("載入失敗:", error);
+            document.getElementById("bossList").innerHTML = `<div class="text-danger text-center">無法連線到伺服器 😭</div>`;
+        }
+    }
+
+    function renderList() {
+        const listContainer = document.getElementById("bossList");
+        listContainer.innerHTML = ""; 
+
+        const filteredData = currentFilter === 'all' 
+            ? allRecords 
+            : allRecords.filter(item => item.boss_name === currentFilter);
+
+        if (filteredData.length === 0) {
+            listContainer.innerHTML = `<div class="col-12 text-center text-white py-5 fs-5">
+                沒有符合「${currentFilter === 'all' ? '任何紀錄' : currentFilter}」的資料 👻
+            </div>`;
+            return;
+        }
+
+        filteredData.forEach(item => {
+            let colorClass = "text-secondary";
+            if (item.color === "blue") colorClass = "text-blue";
+            if (item.color === "orange") colorClass = "text-orange";
+            if (item.color === "red") colorClass = "text-red";
+
+            // 1. 計算最快出生時間 (Min Time)
+            const killDate = new Date(item.kill_time + "Z"); // UTC 轉本地
+            const minDate = new Date(killDate.getTime() + item.min_mins * 60000); // 加上分鐘數 (毫秒)
+            const minTimeStr = minDate.toLocaleString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+
+            // 2. 計算最晚出生時間 (Max Time)
+            const maxDate = new Date(killDate.getTime() + item.max_mins * 60000);
+            const maxTimeStr = maxDate.toLocaleString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+
+            // 頻道顯示邏輯
+            let channelBadge = "";
+            if (item.channel === -1) {
+                channelBadge = `<span class="badge channel-badge-all fs-6">📢 全部頻道</span>`;
+            } else {
+                channelBadge = `<span class="badge bg-light text-dark fs-6 border border-secondary">${item.channel} 頻</span>`;
+            }
+
+            const cardHtml = `
+                <div class="col-md-6 col-lg-4 mb-3 fade-in">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h4 class="card-title m-0 text-white">${item.img} ${item.boss_name}</h4>
+                                ${channelBadge}
+                            </div>
+                            <h5 class="card-text ${colorClass} fw-bold mt-3">${item.status}</h5>
+                            <hr class="border-secondary">
+                            
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="time-label">🚀 最快出生:</span>
+                                <span class="time-value text-blue">${minTimeStr}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="time-label">🐢 最晚出生:</span>
+                                <span class="time-value text-orange">${maxTimeStr}</span>
+                            </div>
+                            
+                            <div class="d-flex gap-2">
+                                <button onclick="resetRecord(${item.id})" class="btn btn-outline-light btn-sm w-100">🔄 剛殺</button>
+                                <button onclick="deleteRecord(${item.id})" class="btn btn-outline-danger btn-sm w-100">🗑️ 刪除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            listContainer.innerHTML += cardHtml;
+        });
+    }
+
+    function filterData(bossName, btnElement) {
+        currentFilter = bossName;
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+        renderList();
+    }
+
+    async function addRecord() {
+        const bossName = document.getElementById("bossSelect").value;
+        const channel = document.getElementById("channelInput").value;
+
+        if (!bossName || !channel) {
+            alert("請選擇王並輸入頻道！");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/bosses`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ boss_name: bossName, channel: parseInt(channel) })
+            });
+
+            if (response.ok) {
+                document.getElementById("channelInput").value = "";
+                await loadData(); 
+            } else {
+                alert("新增失敗");
+            }
+        } catch (error) {
+            console.error("錯誤:", error);
+            alert("連線錯誤");
+        }
+    }
+
+    async function deleteRecord(id) {
+        try {
+            const response = await fetch(`${API_URL}/bosses/${id}`, { method: "DELETE" });
+            if (response.ok) {
+                await loadData(); 
+            } else {
+                alert("刪除失敗");
+            }
+        } catch (error) {
+            alert("連線錯誤");
+        }
+    }
+
+    async function resetRecord(id) {
+        try {
+            const response = await fetch(`${API_URL}/bosses/${id}/reset`, { method: "PUT" });
+            if (response.ok) {
+                await loadData(); 
+            } else {
+                alert("更新失敗");
+            }
+        } catch (error) {
+            alert("連線錯誤");
+        }
+    }
+
+    async function triggerMaintenance() {
+        if (!confirm("將會將全部卡片刪除，重新記錄全頻王時間，是否執行?")) return;
+        try {
+            const response = await fetch(`${API_URL}/maintenance/reset`, { method: "POST" });
+            if (response.ok) {
+                alert("維修重置完成！全頻計時開始！");
+                currentFilter = 'all'; 
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector('.filter-btn:first-child').classList.add('active');
+                await loadData();
+            } else {
+                alert("重置失敗");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("連線錯誤");
+        }
+    }
+
+    loadData();
+    setInterval(loadData, 30000);
+
+</script>
+</body>
+</html>
