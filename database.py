@@ -3,24 +3,25 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 
-# 1. 抓取環境變數 (Render 會有這個變數)
+# 1. 抓取 Render 給的資料庫網址
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
-# 2. 本機開發模式 (如果抓不到雲端網址，就用本機的 SQLite)
+# 2. 如果在本機跑 (沒有環境變數)，就用 SQLite
 if not SQLALCHEMY_DATABASE_URL:
-    print("⚠️  注意：目前使用本機 SQLite 資料庫 (開發測試用)")
-    SQLALCHEMY_DATABASE_URL = "sqlite:///./boss_local.db"
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
 else:
-    print(f"✅ 連線至雲端資料庫: {SQLALCHEMY_DATABASE_URL.split('@')[1]}") # 只印出後面那段，保護密碼
+    # 🔴 關鍵修正：把 postgres:// 改成 postgresql://
+    # Render 預設給前者，但 SQLAlchemy 需要後者才能運作
+    if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+        SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# 3. 修正網址格式 (Render 的 postgres:// 需要轉成 postgresql://)
-if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
-    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-# 4. 建立引擎
+# 3. 建立連線引擎
 if "sqlite" in SQLALCHEMY_DATABASE_URL:
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
 else:
+    # PostgreSQL 不需要 check_same_thread
     engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
