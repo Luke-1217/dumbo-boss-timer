@@ -97,7 +97,7 @@
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('殭屍猴王', this)">🐒 猴王</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('巨居蟹', this)">🦀 巨居蟹</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('冥界幽靈', this)">👻 幽靈</button>
-        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('雪毛怪人', this)">👣 雪毛</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('雪毛怪人', this)">👣 雪怪</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('咕咕鐘', this)">🦉 咕咕鐘</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('巨大深山人蔘', this)">🥕 人蔘</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('沼澤巨鱷', this)">🐊 鱷魚</button>
@@ -109,15 +109,15 @@
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('書生幽靈', this)">📜 書生</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('仙人娃娃', this)">🧸 仙人</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('雪山魔女', this)">🧙‍♀️ 冰魔女</button>
-        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('殭屍蘑菇王', this)">🧟 殭屍蘑</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('殭屍蘑菇王', this)">🧟 殭屍菇</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('蘑菇王', this)">🍄 蘑菇王</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('九尾妖狐', this)">🦊 九尾</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('海怒斯(左)', this)">🐟 海(左)</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('海怒斯(右)', this)">🐡 海(右)</button>
-        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('葛雷金剛', this)">🦍 金剛</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('葛雷金剛', this)">🦍 葛雷</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('巴洛谷', this)">😈 巴洛谷</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('黑輪王', this)">🍢 黑輪王</button>
-        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('藍菇菇王', this)">🔵 藍菇菇</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('藍菇菇王', this)">🔵 藍菇菇王</button>
     </div>
 
     <div id="bossList" class="row">
@@ -126,21 +126,8 @@
 </div>
 
 <script>
-    // ⚠️ 請確認這裡是你 Render 的新後端網址
-    // const API_URL = "https://dumbo-boss-timer-xxxx.onrender.com"; 
-    // 如果你已經改過了，請保留你的，不要被我這行蓋掉
-    
-    // 👇 為了方便你複製貼上，我這裡先寫成會自動抓取當前網址的邏輯 (如果是部署在一起的話)
-    // 但因為我們是分開部署，所以你還是要確認一下上面那行 const API_URL 是否正確
-    // 如果你之前已經改成正確的 Render 網址，請繼續用那一行！
-    
-    // 如果你懶得找，請把下面這行取消註解，並填入正確網址
-    // const API_URL = "https://你的專案名.onrender.com";
-    
-    // 這裡我先用一個變數接，避免報錯，請務必確認你的 index.html 第 255 行左右是正確的網址
-    if (typeof API_URL === 'https://dumbo-api.onrender.com') {
-        console.error("請記得設定 API_URL！");
-    }
+    // ✅ 正確的後端網址 (直接設定，沒有其他檢查)
+    const API_URL = "https://dumbo-api.onrender.com";
 
     let allRecords = []; 
     let currentFilter = 'all'; 
