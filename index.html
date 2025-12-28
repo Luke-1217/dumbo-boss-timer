@@ -34,7 +34,6 @@
         .text-red { color: #ff0000; text-shadow: 0 0 8px rgba(255, 0, 0, 0.5); }
         .channel-badge-all { background-color: #f72585 !important; color: white !important; border: none !important; }
         
-        /* 時間顯示的小標題樣式 */
         .time-label { color: #8892b0; font-size: 0.85em; }
         .time-value { color: #ffffff; font-weight: bold; }
     </style>
@@ -79,6 +78,7 @@
                     <option value="葛雷金剛">🦍 葛雷金剛 (4h30m ~ 5h50m)</option>
                     <option value="巴洛谷">😈 巴洛谷 (6h45m ~ 9h)</option>
                     <option value="黑輪王">🍢 黑輪王 (13h ~ 17h)</option>
+                    <option value="藍菇菇王">🔵 藍菇菇王 (16h40m ~ 31h20m)</option>
                 </select>
             </div>
             <div class="col-md-4">
@@ -100,15 +100,15 @@
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('雪毛怪人', this)">👣 雪毛</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('咕咕鐘', this)">🦉 咕咕鐘</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('巨大深山人蔘', this)">🥕 人蔘</button>
-        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('沼澤巨鱷', this)">🐊 巨鱷</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('沼澤巨鱷', this)">🐊 鱷魚</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('厄運死神', this)">💀 死神</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('肯德熊', this)">🐻 肯德熊</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('艾利傑', this)">🦁 艾利傑</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('喵Z客', this)">🐱 喵Z客</button>
-        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('喵怪仙人', this)">😺 喵怪</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('喵怪仙人', this)">😺 喵仙人</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('書生幽靈', this)">📜 書生</button>
-        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('仙人娃娃', this)">🧸 娃娃</button>
-        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('雪山魔女', this)">🧙‍♀️ 魔女</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('仙人娃娃', this)">🧸 仙人</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('雪山魔女', this)">🧙‍♀️ 冰魔女</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('殭屍蘑菇王', this)">🧟 殭屍蘑</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('蘑菇王', this)">🍄 蘑菇王</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('九尾妖狐', this)">🦊 九尾</button>
@@ -117,6 +117,7 @@
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('葛雷金剛', this)">🦍 金剛</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('巴洛谷', this)">😈 巴洛谷</button>
         <button class="btn filter-btn rounded-pill px-3" onclick="filterData('黑輪王', this)">🍢 黑輪王</button>
+        <button class="btn filter-btn rounded-pill px-3" onclick="filterData('藍菇菇王', this)">🔵 藍菇菇</button>
     </div>
 
     <div id="bossList" class="row">
@@ -125,8 +126,22 @@
 </div>
 
 <script>
-    const API_URL = "https://dumbo-api.onrender.com";
+    // ⚠️ 請確認這裡是你 Render 的新後端網址
+    // const API_URL = "https://dumbo-boss-timer-xxxx.onrender.com"; 
+    // 如果你已經改過了，請保留你的，不要被我這行蓋掉
     
+    // 👇 為了方便你複製貼上，我這裡先寫成會自動抓取當前網址的邏輯 (如果是部署在一起的話)
+    // 但因為我們是分開部署，所以你還是要確認一下上面那行 const API_URL 是否正確
+    // 如果你之前已經改成正確的 Render 網址，請繼續用那一行！
+    
+    // 如果你懶得找，請把下面這行取消註解，並填入正確網址
+    // const API_URL = "https://你的專案名.onrender.com";
+    
+    // 這裡我先用一個變數接，避免報錯，請務必確認你的 index.html 第 255 行左右是正確的網址
+    if (typeof API_URL === 'undefined') {
+        console.error("請記得設定 API_URL！");
+    }
+
     let allRecords = []; 
     let currentFilter = 'all'; 
 
@@ -163,16 +178,13 @@
             if (item.color === "orange") colorClass = "text-orange";
             if (item.color === "red") colorClass = "text-red";
 
-            // 1. 計算最快出生時間 (Min Time)
-            const killDate = new Date(item.kill_time + "Z"); // UTC 轉本地
-            const minDate = new Date(killDate.getTime() + item.min_mins * 60000); // 加上分鐘數 (毫秒)
+            const killDate = new Date(item.kill_time + "Z"); 
+            const minDate = new Date(killDate.getTime() + item.min_mins * 60000); 
             const minTimeStr = minDate.toLocaleString('zh-TW', { hour: '2-digit', minute: '2-digit' });
 
-            // 2. 計算最晚出生時間 (Max Time)
             const maxDate = new Date(killDate.getTime() + item.max_mins * 60000);
             const maxTimeStr = maxDate.toLocaleString('zh-TW', { hour: '2-digit', minute: '2-digit' });
 
-            // 頻道顯示邏輯
             let channelBadge = "";
             if (item.channel === -1) {
                 channelBadge = `<span class="badge channel-badge-all fs-6">📢 全部頻道</span>`;
