@@ -58,6 +58,8 @@ def create_boss_record(record: BossRecordCreate, db: Session = Depends(get_db)):
     return {"status": "success", "data": new_record}
 
 # 📋 功能 B: 查詢所有王的倒數狀態
+# main.py
+
 @app.get("/bosses")
 def get_all_timers(db: Session = Depends(get_db)):
     records = db.query(models.BossRecord).all()
@@ -72,37 +74,46 @@ def get_all_timers(db: Session = Depends(get_db)):
             
         elapsed_time = now - record.kill_time
         elapsed_mins = elapsed_time.total_seconds() / 60
+        
         min_spawn = settings['min_mins']
-        
-        # 🟢 自動銷毀：維修卡 (-1) 且過期
-        if record.channel == -1 and elapsed_mins >= min_spawn:
-            db.delete(record)
-            db.commit()
-            continue 
-            
         max_spawn = settings['max_mins']
-        
-        # 計算各種倒數
-        mins_until_min = min_spawn - elapsed_mins
-        mins_until_max = max_spawn - elapsed_mins # 這是算離「最晚出生」還要多久
+        mins_until_spawn = min_spawn - elapsed_mins
+        mins_until_max = max_spawn - elapsed_mins
         
         status = "unknown"
         status_color = "gray"
-        
-        # 🟢 狀態判斷邏輯 (修改重點)
+        overdue_mins = 0
+        should_delete = False
+
+        # --- 統一邏輯：所有卡片 (包含維修卡) 都跑一樣的流程 ---
+
         if elapsed_mins < min_spawn:
-            # 時間未到 min -> 重生中 (倒數到 min)
-            status = f"⏳ 重生中 (還剩 {int(mins_until_min)} 分)"
+            # 🔵 藍燈: 還沒煮熟 (重生中)
+            status = f"⏳ 重生中 (還剩 {int(mins_until_spawn)} 分)"
             status_color = "blue"
+            
         elif elapsed_mins < max_spawn:
-            # 時間超過 min 但還沒到 max -> 可能出生 (倒數到 max)
-            # 👇 這裡改了！加上了括號顯示保底時間
+            # 🟠 橘燈: 進入保底區間 (可能出生)
             status = f"⚠️ 可能出生 (保底剩 {int(mins_until_max)} 分)"
             status_color = "orange"
+            
         else:
-            # 時間超過 max -> 已出生
-            status = "🔥 已出生"
+            # 🔴 紅燈: 超過保底時間 (已出生)
+            # 計算方式：現在時間 - 最晚出生時間 = 已經出多久了
+            overdue_mins = elapsed_mins - max_spawn
+            status = f"🔥 已出生 (+{int(overdue_mins)} 分)"
             status_color = "red"
+            
+            # 💀 自動刪除機制：
+            # 不管是維修卡還是一般卡，只要紅燈亮超過 180 分鐘，就自動刪除
+            if overdue_mins >= 180:
+                should_delete = True
+
+        # --- 如果需要刪除就執行，否則加入列表 ---
+        if should_delete:
+            db.delete(record)
+            db.commit()
+            continue # 刪掉了就不加入 JSON，直接跳下一筆
 
         result_list.append({
             "id": record.id,
@@ -114,9 +125,10 @@ def get_all_timers(db: Session = Depends(get_db)):
             "kill_time": record.kill_time,
             "min_mins": min_spawn,
             "max_mins": max_spawn,
-            "sort_score": mins_until_min # 排序依然照「誰最快有可能出」來排
+            "sort_score": mins_until_spawn 
         })
     
+    # 排序：快要出的排前面
     result_list.sort(key=lambda x: x['sort_score'])
     return result_list
 
