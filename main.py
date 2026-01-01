@@ -125,7 +125,7 @@ def get_all_timers(db: Session = Depends(get_db)):
             "kill_time": record.kill_time,
             "min_mins": min_spawn,
             "max_mins": max_spawn,
-            "sort_score": mins_until_spawn 
+            "sort_score": mins_until_max 
         })
     
     # 排序：快要出的排前面
