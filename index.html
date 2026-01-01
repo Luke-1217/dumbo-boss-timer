@@ -49,7 +49,8 @@
     </div>
 
     <div class="card p-4 mb-4">
-        <div class="row g-2 align-items-center">
+        <div class="row g-2 align-items-start">
+            
             <div class="col-md-5">
                 <select id="bossSelect" class="form-select bg-dark text-white border-secondary" onchange="checkBossType()">
                     <option value="" disabled selected>-- 請選擇 BOSS --</option>
@@ -81,19 +82,20 @@
                     <option value="藍菇菇王">🔵 藍菇菇王 (14h ~ 28h)</option>
                     <option value="竹刀武士">🎋 竹刀武士 (1h53m ~ 2h8m)</option>
                 </select>
-
-                <div id="heilunOptions" class="mt-2" style="display: none;">
-                    <div class="d-flex gap-2">
-                        <input type="hidden" id="heilunNote" value=""> 
-                        <button class="btn btn-outline-warning btn-sm px-3" onclick="selectHeilunType('7', this)">📍 地點：7</button>
-                        <button class="btn btn-outline-warning btn-sm px-3" onclick="selectHeilunType('7-1', this)">📍 地點：7-1</button>
-                    </div>
-                </div>
             </div>
 
             <div class="col-md-4">
                 <input type="number" id="channelInput" class="form-control bg-dark text-white border-secondary" placeholder="輸入頻道 (例如 1527)">
+                
+                <div id="heilunOptions" class="mt-2" style="display: none;">
+                    <div class="d-flex gap-2">
+                        <input type="hidden" id="heilunNote" value=""> 
+                        <button class="btn btn-outline-warning btn-sm px-3" onclick="selectHeilunType('7', this)">📍 7</button>
+                        <button class="btn btn-outline-warning btn-sm px-3" onclick="selectHeilunType('7-1', this)">📍 7-1</button>
+                    </div>
+                </div>
             </div>
+
             <div class="col-md-3">
                 <button onclick="addRecord()" class="btn btn-primary w-100 fw-bold">⚔️ 登記擊殺</button>
             </div>
@@ -216,7 +218,7 @@
                 channelBadge = `<span class="badge bg-light text-dark fs-6 border border-secondary">${item.channel} 頻</span>`;
             }
             
-            // ✅ 關鍵修正：這裡會檢查有沒有備註，有的話就加上黃色標籤
+            // ✅ 備註標籤
             if (item.note) {
                 channelBadge += ` <span class="badge bg-warning text-dark fs-6 ms-1">📍 ${item.note}</span>`;
             }
