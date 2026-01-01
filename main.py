@@ -96,28 +96,32 @@ def get_all_timers(db: Session = Depends(get_db)):
         
         status = "unknown"
         status_color = "gray"
+        status_priority = 3 # 預設優先級 (越小越前面)
         overdue_mins = 0
         should_delete = False
 
-        # --- 統一邏輯 ---
+        # --- 判斷燈號與優先級 ---
 
         if elapsed_mins < min_spawn:
-            # 🔵 藍燈: 重生中
+            # 🔵 藍燈 (優先級 2: 最後)
             status = f"⏳ 重生中 (還剩 {int(mins_until_spawn)} 分)"
             status_color = "blue"
+            status_priority = 2
             
         elif elapsed_mins < max_spawn:
-            # 🟠 橘燈: 可能出生
+            # 🟠 橘燈 (優先級 1: 中間)
             status = f"⚠️ 可能出生 (保底剩 {int(mins_until_max)} 分)"
             status_color = "orange"
+            status_priority = 1
             
         else:
-            # 🔴 紅燈: 已出生
+            # 🔴 紅燈 (優先級 0: 最前面)
             overdue_mins = elapsed_mins - max_spawn
             status = f"🔥 已出生 (+{int(overdue_mins)} 分)"
             status_color = "red"
+            status_priority = 0
             
-            # 💀 自動刪除機制 (180分鐘)
+            # 180分鐘自動刪除
             if overdue_mins >= 180:
                 should_delete = True
 
@@ -131,18 +135,22 @@ def get_all_timers(db: Session = Depends(get_db)):
             "boss_name": record.boss_name,
             "img": settings['img'],
             "channel": record.channel,
-            # 👇 6. 把 note 傳回給前端
             "note": record.note, 
             "status": status,
             "color": status_color,
             "kill_time": record.kill_time,
             "min_mins": min_spawn,
             "max_mins": max_spawn,
-            # 👇 7. 用保底時間排序 (紅燈會在最上面)
+            # 👇 新增這個優先級欄位
+            "status_priority": status_priority,
             "sort_score": mins_until_max 
         })
     
-    result_list.sort(key=lambda x: x['sort_score'])
+    # 排序邏輯修改：
+    # 1. 先比優先級 (紅0 > 橘1 > 藍2)
+    # 2. 同顏色的情況下，再比剩餘時間 (sort_score)
+    result_list.sort(key=lambda x: (x['status_priority'], x['sort_score']))
+    
     return result_list
 
 # 🗑️ 功能 C: 刪除紀錄
