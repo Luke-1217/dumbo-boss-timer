@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
 import math
-# 👇 1. 新增這個 import，為了執行 SQL 指令
+# 👇 1. 確保有匯入 text
 from sqlalchemy import text 
 
 # 引入我們自己寫的檔案
@@ -12,23 +12,22 @@ from database import engine, SessionLocal
 import models
 import game_config
 
-# 1. 建立資料庫表格
+# 1. 建立資料庫表格 (如果沒有的話)
 models.Base.metadata.create_all(bind=engine)
 
-# 👇 2. 【新增區塊】自動檢查並升級資料庫 (幫你加 note 欄位)
-with engine.connect() as conn:
-    try:
-        # 試著讀取 boss_timers 表格的 note 欄位
-        conn.execute(text("SELECT note FROM boss_timers LIMIT 1"))
-    except:
-        print("⚡ 正在自動升級資料庫，新增 note 欄位...")
-        # 如果失敗 (代表沒這欄位)，就自動加上去
-        conn.execute(text("ALTER TABLE boss_timers ADD COLUMN note VARCHAR"))
-        conn.commit()
+# 👇 2. 【安全版】自動資料庫升級：新增 note 欄位
+# 使用 engine.begin() 會自動處理交易，且用 IF NOT EXISTS 防止報錯
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE boss_timers ADD COLUMN IF NOT EXISTS note VARCHAR"))
+        print("✅ 資料庫檢查完成：note 欄位已就緒")
+except Exception as e:
+    # 萬一出錯只印訊息，不讓網站崩潰
+    print(f"⚠️ 資料庫自動更新略過: {e}")
 
 app = FastAPI()
 
-# 2. 設定 CORS
+# 3. 設定 CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -46,7 +45,7 @@ def get_db():
 class BossRecordCreate(BaseModel):
     boss_name: str
     channel: int
-    # 👇 3. 【新增欄位】允許前端傳送 note (7 或 7-1)
+    # 👇 4. 允許前端傳送 note
     note: str | None = None
 
 # --- API 區域 ---
@@ -64,7 +63,7 @@ def create_boss_record(record: BossRecordCreate, db: Session = Depends(get_db)):
     new_record = models.BossRecord(
         boss_name=record.boss_name,
         channel=record.channel,
-        # 👇 4. 【新增寫入】把 note 存進資料庫
+        # 👇 5. 把 note 存進資料庫
         note=record.note,
         kill_time=datetime.utcnow()
     )
@@ -100,29 +99,28 @@ def get_all_timers(db: Session = Depends(get_db)):
         overdue_mins = 0
         should_delete = False
 
-        # --- 統一邏輯：所有卡片 (包含維修卡) 都跑一樣的流程 ---
+        # --- 統一邏輯 ---
 
         if elapsed_mins < min_spawn:
-            # 🔵 藍燈: 還沒煮熟 (重生中)
+            # 🔵 藍燈: 重生中
             status = f"⏳ 重生中 (還剩 {int(mins_until_spawn)} 分)"
             status_color = "blue"
             
         elif elapsed_mins < max_spawn:
-            # 🟠 橘燈: 進入保底區間 (可能出生)
+            # 🟠 橘燈: 可能出生
             status = f"⚠️ 可能出生 (保底剩 {int(mins_until_max)} 分)"
             status_color = "orange"
             
         else:
-            # 🔴 紅燈: 超過保底時間 (已出生)
+            # 🔴 紅燈: 已出生
             overdue_mins = elapsed_mins - max_spawn
             status = f"🔥 已出生 (+{int(overdue_mins)} 分)"
             status_color = "red"
             
-            # 💀 自動刪除機制：180 分鐘後刪除
+            # 💀 自動刪除機制 (180分鐘)
             if overdue_mins >= 180:
                 should_delete = True
 
-        # --- 如果需要刪除就執行，否則加入列表 ---
         if should_delete:
             db.delete(record)
             db.commit()
@@ -133,17 +131,17 @@ def get_all_timers(db: Session = Depends(get_db)):
             "boss_name": record.boss_name,
             "img": settings['img'],
             "channel": record.channel,
-            # 👇 5. 【新增回傳】把 note 傳給前端顯示
+            # 👇 6. 把 note 傳回給前端
             "note": record.note, 
             "status": status,
             "color": status_color,
             "kill_time": record.kill_time,
             "min_mins": min_spawn,
             "max_mins": max_spawn,
+            # 👇 7. 用保底時間排序 (紅燈會在最上面)
             "sort_score": mins_until_max 
         })
     
-    # 排序：快要出的排前面
     result_list.sort(key=lambda x: x['sort_score'])
     return result_list
 
@@ -158,7 +156,7 @@ def delete_boss(boss_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": "刪除成功"}
 
-# 🔄 功能 D: 重置時間
+# 🔄 功能 D: 重置時間 (剛殺)
 @app.put("/bosses/{boss_id}/reset")
 def reset_boss(boss_id: int, db: Session = Depends(get_db)):
     record = db.query(models.BossRecord).filter(models.BossRecord.id == boss_id).first()
@@ -170,7 +168,7 @@ def reset_boss(boss_id: int, db: Session = Depends(get_db)):
     db.refresh(record)
     return {"status": "success", "message": "時間已重置"}
 
-# 🛠️ 功能 E: 維修重置
+# 🛠️ 功能 E: 維修重置 (全頻倒數)
 @app.post("/maintenance/reset")
 def maintenance_reset(db: Session = Depends(get_db)):
     db.query(models.BossRecord).delete()

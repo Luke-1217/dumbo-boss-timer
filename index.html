@@ -151,7 +151,6 @@
         } else {
             heilunDiv.style.display = "none"; 
             document.getElementById("heilunNote").value = ""; 
-            // 重置按鈕
             document.querySelectorAll('#heilunOptions button').forEach(btn => {
                 btn.classList.remove('active', 'btn-warning');
                 btn.classList.add('btn-outline-warning');
@@ -217,7 +216,7 @@
                 channelBadge = `<span class="badge bg-light text-dark fs-6 border border-secondary">${item.channel} 頻</span>`;
             }
             
-            // 如果有備註，加上黃色標籤
+            // ✅ 關鍵修正：這裡會檢查有沒有備註，有的話就加上黃色標籤
             if (item.note) {
                 channelBadge += ` <span class="badge bg-warning text-dark fs-6 ms-1">📍 ${item.note}</span>`;
             }
@@ -271,7 +270,6 @@
             return;
         }
 
-        // 黑輪王防呆
         if (bossName === "黑輪王" && !note) {
             alert("⚠️ 登記黑輪王請選擇地點 (7 或 7-1)！");
             return;
@@ -290,14 +288,11 @@
 
             if (response.ok) {
                 document.getElementById("channelInput").value = "";
-                
-                // 重置黑輪王按鈕
                 document.getElementById("heilunNote").value = "";
                 document.querySelectorAll('#heilunOptions button').forEach(btn => {
                     btn.classList.remove('active', 'btn-warning');
                     btn.classList.add('btn-outline-warning');
                 });
-
                 await loadData(); 
             } else {
                 const err = await response.json();
