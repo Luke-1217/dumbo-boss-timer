@@ -49,9 +49,9 @@
     </div>
 
     <div class="card p-4 mb-4">
-        <div class="row g-2">
+        <div class="row g-2 align-items-center">
             <div class="col-md-5">
-                <select id="bossSelect" class="form-select bg-dark text-white border-secondary">
+                <select id="bossSelect" class="form-select bg-dark text-white border-secondary" onchange="checkBossType()">
                     <option value="" disabled selected>-- 請選擇 BOSS --</option>
                     <option value="紅寶王">🐌 紅寶王 (23m ~ 30m)</option>
                     <option value="樹妖王">🌳 樹妖王 (23m ~ 30m)</option>
@@ -81,7 +81,16 @@
                     <option value="藍菇菇王">🔵 藍菇菇王 (14h ~ 28h)</option>
                     <option value="竹刀武士">🎋 竹刀武士 (1h53m ~ 2h8m)</option>
                 </select>
+
+                <div id="heilunOptions" class="mt-2" style="display: none;">
+                    <div class="d-flex gap-2">
+                        <input type="hidden" id="heilunNote" value=""> 
+                        <button class="btn btn-outline-warning btn-sm px-3" onclick="selectHeilunType('7', this)">📍 地點：7</button>
+                        <button class="btn btn-outline-warning btn-sm px-3" onclick="selectHeilunType('7-1', this)">📍 地點：7-1</button>
+                    </div>
+                </div>
             </div>
+
             <div class="col-md-4">
                 <input type="number" id="channelInput" class="form-control bg-dark text-white border-secondary" placeholder="輸入頻道 (例如 1527)">
             </div>
@@ -128,18 +137,44 @@
 </div>
 
 <script>
-    // ✅ 正確的後端網址 (直接設定，沒有其他檢查)
     const API_URL = "https://dumbo-api.onrender.com";
 
     let allRecords = []; 
     let currentFilter = 'all'; 
+
+    function checkBossType() {
+        const bossName = document.getElementById("bossSelect").value;
+        const heilunDiv = document.getElementById("heilunOptions");
+        
+        if (bossName === "黑輪王") {
+            heilunDiv.style.display = "block"; 
+        } else {
+            heilunDiv.style.display = "none"; 
+            document.getElementById("heilunNote").value = ""; 
+            // 重置按鈕
+            document.querySelectorAll('#heilunOptions button').forEach(btn => {
+                btn.classList.remove('active', 'btn-warning');
+                btn.classList.add('btn-outline-warning');
+            });
+        }
+    }
+
+    function selectHeilunType(value, btn) {
+        document.getElementById("heilunNote").value = value;
+        
+        document.querySelectorAll('#heilunOptions button').forEach(b => {
+            b.classList.remove('active', 'btn-warning');
+            b.classList.add('btn-outline-warning');
+        });
+        btn.classList.remove('btn-outline-warning');
+        btn.classList.add('active', 'btn-warning');
+    }
 
     async function loadData() {
         try {
             const response = await fetch(`${API_URL}/bosses`);
             allRecords = await response.json(); 
             renderList();
-
         } catch (error) {
             console.error("載入失敗:", error);
             document.getElementById("bossList").innerHTML = `<div class="text-danger text-center">無法連線到伺服器 😭</div>`;
@@ -174,22 +209,28 @@
             const maxDate = new Date(killDate.getTime() + item.max_mins * 60000);
             const maxTimeStr = maxDate.toLocaleString('zh-TW', { hour: '2-digit', minute: '2-digit' });
 
+            // 顯示頻道與備註 (Note)
             let channelBadge = "";
             if (item.channel === -1) {
                 channelBadge = `<span class="badge channel-badge-all fs-6">📢 全部頻道</span>`;
             } else {
                 channelBadge = `<span class="badge bg-light text-dark fs-6 border border-secondary">${item.channel} 頻</span>`;
             }
+            
+            // 如果有備註，加上黃色標籤
+            if (item.note) {
+                channelBadge += ` <span class="badge bg-warning text-dark fs-6 ms-1">📍 ${item.note}</span>`;
+            }
 
             const cardHtml = `
                 <div class="col-md-6 col-lg-4 mb-3 fade-in">
                     <div class="card h-100">
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="card-header bg-transparent d-flex justify-content-between align-items-center p-0 mb-3 border-0">
                                 <h4 class="card-title m-0 text-white">${item.img} ${item.boss_name}</h4>
-                                ${channelBadge}
+                                <div>${channelBadge}</div>
                             </div>
-                            <h5 class="card-text ${colorClass} fw-bold mt-3">${item.status}</h5>
+                            <h5 class="card-text ${colorClass} fw-bold">${item.status}</h5>
                             <hr class="border-secondary">
                             
                             <div class="d-flex justify-content-between mb-2">
@@ -223,9 +264,16 @@
     async function addRecord() {
         const bossName = document.getElementById("bossSelect").value;
         const channel = document.getElementById("channelInput").value;
+        const note = document.getElementById("heilunNote").value;
 
         if (!bossName || !channel) {
             alert("請選擇王並輸入頻道！");
+            return;
+        }
+
+        // 黑輪王防呆
+        if (bossName === "黑輪王" && !note) {
+            alert("⚠️ 登記黑輪王請選擇地點 (7 或 7-1)！");
             return;
         }
 
@@ -233,14 +281,27 @@
             const response = await fetch(`${API_URL}/bosses`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ boss_name: bossName, channel: parseInt(channel) })
+                body: JSON.stringify({ 
+                    boss_name: bossName, 
+                    channel: parseInt(channel),
+                    note: note 
+                })
             });
 
             if (response.ok) {
                 document.getElementById("channelInput").value = "";
+                
+                // 重置黑輪王按鈕
+                document.getElementById("heilunNote").value = "";
+                document.querySelectorAll('#heilunOptions button').forEach(btn => {
+                    btn.classList.remove('active', 'btn-warning');
+                    btn.classList.add('btn-outline-warning');
+                });
+
                 await loadData(); 
             } else {
-                alert("新增失敗");
+                const err = await response.json();
+                alert("新增失敗: " + err.detail);
             }
         } catch (error) {
             console.error("錯誤:", error);

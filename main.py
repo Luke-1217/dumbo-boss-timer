@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
 import math
+# 👇 1. 新增這個 import，為了執行 SQL 指令
+from sqlalchemy import text 
 
 # 引入我們自己寫的檔案
 from database import engine, SessionLocal
@@ -12,6 +14,17 @@ import game_config
 
 # 1. 建立資料庫表格
 models.Base.metadata.create_all(bind=engine)
+
+# 👇 2. 【新增區塊】自動檢查並升級資料庫 (幫你加 note 欄位)
+with engine.connect() as conn:
+    try:
+        # 試著讀取 boss_timers 表格的 note 欄位
+        conn.execute(text("SELECT note FROM boss_timers LIMIT 1"))
+    except:
+        print("⚡ 正在自動升級資料庫，新增 note 欄位...")
+        # 如果失敗 (代表沒這欄位)，就自動加上去
+        conn.execute(text("ALTER TABLE boss_timers ADD COLUMN note VARCHAR"))
+        conn.commit()
 
 app = FastAPI()
 
@@ -33,6 +46,8 @@ def get_db():
 class BossRecordCreate(BaseModel):
     boss_name: str
     channel: int
+    # 👇 3. 【新增欄位】允許前端傳送 note (7 或 7-1)
+    note: str | None = None
 
 # --- API 區域 ---
 
@@ -49,6 +64,8 @@ def create_boss_record(record: BossRecordCreate, db: Session = Depends(get_db)):
     new_record = models.BossRecord(
         boss_name=record.boss_name,
         channel=record.channel,
+        # 👇 4. 【新增寫入】把 note 存進資料庫
+        note=record.note,
         kill_time=datetime.utcnow()
     )
     
@@ -58,8 +75,6 @@ def create_boss_record(record: BossRecordCreate, db: Session = Depends(get_db)):
     return {"status": "success", "data": new_record}
 
 # 📋 功能 B: 查詢所有王的倒數狀態
-# main.py
-
 @app.get("/bosses")
 def get_all_timers(db: Session = Depends(get_db)):
     records = db.query(models.BossRecord).all()
@@ -99,13 +114,11 @@ def get_all_timers(db: Session = Depends(get_db)):
             
         else:
             # 🔴 紅燈: 超過保底時間 (已出生)
-            # 計算方式：現在時間 - 最晚出生時間 = 已經出多久了
             overdue_mins = elapsed_mins - max_spawn
             status = f"🔥 已出生 (+{int(overdue_mins)} 分)"
             status_color = "red"
             
-            # 💀 自動刪除機制：
-            # 不管是維修卡還是一般卡，只要紅燈亮超過 180 分鐘，就自動刪除
+            # 💀 自動刪除機制：180 分鐘後刪除
             if overdue_mins >= 180:
                 should_delete = True
 
@@ -113,13 +126,15 @@ def get_all_timers(db: Session = Depends(get_db)):
         if should_delete:
             db.delete(record)
             db.commit()
-            continue # 刪掉了就不加入 JSON，直接跳下一筆
+            continue 
 
         result_list.append({
             "id": record.id,
             "boss_name": record.boss_name,
             "img": settings['img'],
             "channel": record.channel,
+            # 👇 5. 【新增回傳】把 note 傳給前端顯示
+            "note": record.note, 
             "status": status,
             "color": status_color,
             "kill_time": record.kill_time,
